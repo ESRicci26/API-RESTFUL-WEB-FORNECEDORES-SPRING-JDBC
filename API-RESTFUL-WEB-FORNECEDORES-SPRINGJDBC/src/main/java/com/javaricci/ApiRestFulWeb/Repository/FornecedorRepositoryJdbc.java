@@ -19,6 +19,159 @@ public class FornecedorRepositoryJdbc implements FornecedorRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    // ============================================================
+    // Mapeamento de ResultSet -> Objeto Fornecedor
+    // ============================================================
+    private final RowMapper<Fornecedor> rowMapper = new RowMapper<Fornecedor>() {
+        @Override
+        public Fornecedor mapRow(ResultSet rs, int rowNum) throws SQLException {
+            Fornecedor f = new Fornecedor();
+            f.setId(rs.getLong("id"));
+            f.setNome(rs.getString("RAZAOSOCIALFORNECEDOR"));
+            f.setCnpj(rs.getString("CNPJFORNECEDOR"));
+            f.setEndereco(rs.getString("ENDERECO"));
+            f.setBairro(rs.getString("BAIRRO"));
+            f.setMunicipio(rs.getString("MUNICIPIO"));
+            f.setCep(rs.getString("CEP"));
+            return f;
+        }
+    };
+
+    // ============================================================
+    // MÉTODO: INSERIR NOVO FORNECEDOR
+    // ============================================================
+    public Fornecedor inserir(Fornecedor fornecedor) {
+        String sql =
+            "INSERT INTO FORNECEDORES " +
+            "(RAZAOSOCIALFORNECEDOR, CNPJFORNECEDOR, ENDERECO, BAIRRO, MUNICIPIO, CEP) " +
+            "VALUES (?, ?, ?, ?, ?, ?)";
+
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, fornecedor.getNome());
+            ps.setString(2, fornecedor.getCnpj());
+            ps.setString(3, fornecedor.getEndereco());
+            ps.setString(4, fornecedor.getBairro());
+            ps.setString(5, fornecedor.getMunicipio());
+            ps.setString(6, fornecedor.getCep());
+            return ps;
+        }, keyHolder);
+
+        Number key = keyHolder.getKey();
+        if (key != null) {
+            fornecedor.setId(key.longValue());
+        }
+
+        return fornecedor;
+    }
+
+    // ============================================================
+    // MÉTODO: ATUALIZAR FORNECEDOR EXISTENTE
+    // ============================================================
+    public int atualizar(Fornecedor fornecedor) {
+        String sql =
+            "UPDATE FORNECEDORES SET " +
+            "RAZAOSOCIALFORNECEDOR = ?, " +
+            "CNPJFORNECEDOR = ?, " +
+            "ENDERECO = ?, " +
+            "BAIRRO = ?, " +
+            "MUNICIPIO = ?, " +
+            "CEP = ? " +
+            "WHERE id = ?";
+
+        return jdbcTemplate.update(sql,
+                fornecedor.getNome(),
+                fornecedor.getCnpj(),
+                fornecedor.getEndereco(),
+                fornecedor.getBairro(),
+                fornecedor.getMunicipio(),
+                fornecedor.getCep(),
+                fornecedor.getId());
+    }
+
+    // ============================================================
+    // MÉTODO: EXCLUIR FORNECEDOR PELO ID
+    // ============================================================
+    public int excluir(Long id) {
+        String sql = "DELETE FROM FORNECEDORES WHERE id = ?";
+        return jdbcTemplate.update(sql, id);
+    }
+
+    // ============================================================
+    // MÉTODO: LISTAR TODOS OS FORNECEDORES
+    // ============================================================
+    public List<Fornecedor> listarTodos() {
+        String sql =
+            "SELECT id, RAZAOSOCIALFORNECEDOR, CNPJFORNECEDOR, ENDERECO, " +
+            "BAIRRO, MUNICIPIO, CEP FROM FORNECEDORES";
+        return jdbcTemplate.query(sql, rowMapper);
+    }
+
+    // ============================================================
+    // MÉTODO: BUSCAR FORNECEDOR POR ID
+    // ============================================================
+    public Optional<Fornecedor> listarPorId(Long id) {
+        String sql =
+            "SELECT id, RAZAOSOCIALFORNECEDOR, CNPJFORNECEDOR, ENDERECO, " +
+            "BAIRRO, MUNICIPIO, CEP FROM FORNECEDORES WHERE id = ?";
+        List<Fornecedor> lista = jdbcTemplate.query(sql, new Object[]{id}, rowMapper);
+        return lista.isEmpty() ? Optional.empty() : Optional.of(lista.get(0));
+    }
+
+    // ============================================================
+    // Implementação da interface FornecedorRepository
+    // ============================================================
+    @Override
+    public List<Fornecedor> findAll() {
+        return listarTodos();
+    }
+
+    @Override
+    public Optional<Fornecedor> findById(Long id) {
+        return listarPorId(id);
+    }
+
+    @Override
+    public Fornecedor save(Fornecedor fornecedor) {
+        if (fornecedor.getId() == null) {
+            return inserir(fornecedor);
+        } else {
+            atualizar(fornecedor);
+            return fornecedor;
+        }
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        excluir(id);
+    }
+}
+
+
+/*
+package com.javaricci.ApiRestFulWeb.Repository;
+
+import com.javaricci.ApiRestFulWeb.Entity.Fornecedor;
+import org.springframework.jdbc.core.*;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Repository;
+
+import java.sql.*;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public class FornecedorRepositoryJdbc implements FornecedorRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public FornecedorRepositoryJdbc(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
     private final RowMapper<Fornecedor> rowMapper = (rs, rowNum) -> {
         Fornecedor f = new Fornecedor();
         f.setId(rs.getLong("id"));
@@ -90,3 +243,4 @@ public class FornecedorRepositoryJdbc implements FornecedorRepository {
         jdbcTemplate.update(sql, id);
     }
 }
+*/
